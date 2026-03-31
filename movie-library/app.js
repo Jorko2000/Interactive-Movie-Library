@@ -21,7 +21,9 @@ const MovieApp = (() => {
             if (!query.trim()) {
                 throw new Error("Please enter a movie title.");
             }
-
+            
+     // Async/Await + Fetch API
+            
             const response = await fetch(`${BASE_URL}&s=${query}`);
             const data = await response.json();
 
