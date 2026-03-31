@@ -1,35 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Movie Library</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <title>Interactive Movie Library</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>  Movie Library</h1>
+    <h1> Movie Library</h1>
 
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search movie...">
-    <button id="searchBtn">Search</button>
-  </div>
-
-  <p id="errorMsg"></p>
-
-  <h2>Results</h2>
-  <div id="movieList" class="grid"></div>
-
-  <h2>  Favorites</h2>
-  <div id="favoritesList" class="grid"></div>
-
-  <!-- Modal -->
-  <div id="modal" class="modal hidden">
-    <div class="modal-content">
-      <span id="closeModal">&times;</span>
-      <div id="modalBody"></div>
+    <!-- Search -->
+    <div id="search-section">
+        <input type="text" id="searchInput" placeholder="Search for a movie...">
+        <button id="searchBtn">Search</button>
     </div>
-  </div>
 
-  <script src="app.js"></script>
+    <!-- Error Message -->
+    <p id="errorMsg"></p>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+    <!-- Movie Details -->
+    <div id="movieDetails"></div>
+
+    <!-- Favorites -->
+    <h2> Favorites</h2>
+    <div id="favorites"></div>
+
+    <script src="app.js"></script>
 </body>
 </html>
