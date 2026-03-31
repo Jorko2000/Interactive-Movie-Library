@@ -1,165 +1,168 @@
-// MovieApp Module Pattern
+// Module Pattern Implementation
 const MovieApp = (() => {
 
-  // CONFIG 
-  const API_KEY = "YOUR_API_KEY";
-  const BASE_URL = `https://www.omdbapi.com/?apikey=${API_KEY}`;
+    const API_KEY = "YOUR_API_KEY"; 
+    const BASE_URL = `https://www.omdbapi.com/?apikey=${API_KEY}`;
 
-  // DOM 
-  const movieList = document.getElementById("movieList");
-  const favoritesList = document.getElementById("favoritesList");
-  const errorMsg = document.getElementById("errorMsg");
-  const modal = document.getElementById("modal");
-  const modalBody = document.getElementById("modalBody");
+    // DOM Elements
+    const searchInput = document.querySelector("#searchInput");
+    const searchBtn = document.querySelector("#searchBtn");
+    const resultsDiv = document.querySelector("#results");
+    const detailsDiv = document.querySelector("#movieDetails");
+    const favoritesDiv = document.querySelector("#favorites");
+    const errorMsg = document.querySelector("#errorMsg");
 
-  // FETCH 
-  async function searchMovies(title) {
-    try {
-      clearError();
+    // Fetch Movies (Search)
+  
+    const searchMovies = async (query) => {
+        try {
+            clearError();
 
-      const res = await fetch(`${BASE_URL}&s=${title}`);
-      const data = await res.json();
+            if (!query.trim()) {
+                throw new Error("Please enter a movie title.");
+            }
 
-      if (data.Response === "False") {
-        showError(data.Error);
-        movieList.innerHTML = "";
-        return;
-      }
+            const response = await fetch(`${BASE_URL}&s=${query}`);
+            const data = await response.json();
 
-      renderMovies(data.Search);
+            if (data.Response === "False") {
+                throw new Error("Movie not found.");
+            }
 
-    } catch (err) {
-      showError("Failed to fetch movies");
-    }
-  }
+            renderMovies(data.Search);
+        } catch (err) {
+            showError(err.message);
+        }
+    };
 
-  async function getMovieDetails(id) {
-    try {
-      const res = await fetch(`${BASE_URL}&i=${id}`);
-      const movie = await res.json();
+    // Fetch Movie Details
+  
+    const getMovieDetails = async (id) => {
+        try {
+            const response = await fetch(`${BASE_URL}&i=${id}`);
+            const movie = await response.json();
 
-      modalBody.innerHTML = `
-        <h2>${movie.Title}</h2>
-        <p><strong>Year:</strong> ${movie.Year}</p>
-        <p><strong>Genre:</strong> ${movie.Genre}</p>
-        <p><strong>Plot:</strong> ${movie.Plot}</p>
-      `;
+            renderDetails(movie);
+        } catch {
+            showError("Failed to load movie details.");
+        }
+    };
 
-      modal.classList.remove("hidden");
+  
+    // Render Movie List
+  
+    const renderMovies = (movies) => {
+        resultsDiv.innerHTML = "";
 
-    } catch {
-      showError("Failed to load movie details");
-    }
-  }
+        movies.forEach(movie => {
+            const div = document.createElement("div");
+            div.classList.add("movie");
 
-  // RENDER 
-  function renderMovies(movies) {
-    movieList.innerHTML = "";
+            div.innerHTML = `
+                <img src="${movie.Poster}" alt="">
+                <h3>${movie.Title}</h3>
+                <p>${movie.Year}</p>
+                <button data-id="${movie.imdbID}">Details</button>
+                <button data-fav='${JSON.stringify(movie)}'>❤️</button>
+            `;
 
-    movies.forEach(movie => {
-      const div = document.createElement("div");
-      div.className = "movie";
+            // Event: Details
+            div.querySelector("button[data-id]")
+                .addEventListener("click", () => getMovieDetails(movie.imdbID));
 
-      div.innerHTML = `
-        <img src="${movie.Poster !== "N/A" ? movie.Poster : ""}" />
-        <h3>${movie.Title}</h3>
-        <p>${movie.Year}</p>
-        <button class="details-btn">Details</button>
-        <button class="fav-btn">⭐</button>
-      `;
+            // Event: Add to favorites
+            div.querySelector("button[data-fav]")
+                .addEventListener("click", () => addToFavorites(movie));
 
-      div.querySelector(".details-btn")
-        .addEventListener("click", () => getMovieDetails(movie.imdbID));
+            resultsDiv.appendChild(div);
+        });
+    };
 
-      div.querySelector(".fav-btn")
-        .addEventListener("click", () => addToFavorites(movie));
+    // Render Movie Details
 
-      movieList.appendChild(div);
-    });
-  }
+    const renderDetails = (movie) => {
+        detailsDiv.innerHTML = `
+            <h2>${movie.Title}</h2>
+            <img src="${movie.Poster}">
+            <p><strong>Year:</strong> ${movie.Year}</p>
+            <p><strong>Genre:</strong> ${movie.Genre}</p>
+            <p>${movie.Plot}</p>
+        `;
+    };
 
-  function renderFavorites() {
-    favoritesList.innerHTML = "";
-    const favorites = getFavorites();
+    // Favorites Logic (localStorage)
+  
+    const getFavorites = () => {
+        return JSON.parse(localStorage.getItem("favorites")) || [];
+    };
 
-    favorites.forEach(movie => {
-      const div = document.createElement("div");
-      div.className = "movie";
+    const saveFavorites = (favorites) => {
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+    };
 
-      div.innerHTML = `
-        <img src="${movie.Poster !== "N/A" ? movie.Poster : ""}" />
-        <h3>${movie.Title}</h3>
-        <button class="remove-btn">Remove</button>
-      `;
+    const addToFavorites = (movie) => {
+        const favorites = getFavorites();
 
-      div.querySelector(".remove-btn")
-        .addEventListener("click", () => removeFromFavorites(movie.imdbID));
+        if (!favorites.find(m => m.imdbID === movie.imdbID)) {
+            favorites.push(movie);
+            saveFavorites(favorites);
+            renderFavorites();
+        }
+    };
 
-      favoritesList.appendChild(div);
-    });
-  }
+    const removeFromFavorites = (id) => {
+        let favorites = getFavorites();
+        favorites = favorites.filter(m => m.imdbID !== id);
+        saveFavorites(favorites);
+        renderFavorites();
+    };
 
-  // FAVORITES 
-  function getFavorites() {
-    return JSON.parse(localStorage.getItem("favorites")) || [];
-  }
+    const renderFavorites = () => {
+        favoritesDiv.innerHTML = "";
 
-  function addToFavorites(movie) {
-    let favorites = getFavorites();
+        const favorites = getFavorites();
 
-    if (!favorites.find(m => m.imdbID === movie.imdbID)) {
-      favorites.push(movie);
-      localStorage.setItem("favorites", JSON.stringify(favorites));
-      renderFavorites();
-    }
-  }
+        favorites.forEach(movie => {
+            const div = document.createElement("div");
+            div.classList.add("movie");
 
-  function removeFromFavorites(id) {
-    let favorites = getFavorites();
-    favorites = favorites.filter(m => m.imdbID !== id);
+            div.innerHTML = `
+                <img src="${movie.Poster}">
+                <h4>${movie.Title}</h4>
+                <button data-remove="${movie.imdbID}">❌</button>
+            `;
 
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-    renderFavorites();
-  }
+            div.querySelector("button")
+                .addEventListener("click", () => removeFromFavorites(movie.imdbID));
 
-  // ERROR 
-  function showError(msg) {
-    errorMsg.textContent = msg;
-  }
+            favoritesDiv.appendChild(div);
+        });
+    };
 
-  function clearError() {
-    errorMsg.textContent = "";
-  }
+    // Error Handling
 
-  // EVENTS 
-  function setupEventListeners() {
-    document.getElementById("searchBtn").addEventListener("click", () => {
-      const input = document.getElementById("searchInput").value.trim();
+    const showError = (msg) => {
+        errorMsg.textContent = msg;
+    };
 
-      if (!input) {
-        showError("Please enter a movie title");
-        return;
-      }
+    const clearError = () => {
+        errorMsg.textContent = "";
+    };
 
-      searchMovies(input);
-    });
+    // Event Listeners
+    
+    const init = () => {
+        searchBtn.addEventListener("click", () => {
+            searchMovies(searchInput.value);
+        });
 
-    document.getElementById("closeModal")
-      .addEventListener("click", () => modal.classList.add("hidden"));
-  }
+        // Load favorites on page load
+        renderFavorites();
+    };
 
-  // INIT 
-  function init() {
-    setupEventListeners();
-    renderFavorites();
-  }
-
-  // Public API
-  return {
-    init
-  };
+    return { init };
 
 })();
 
-// Initialize app
-window.addEventListener("load", MovieApp.init);
+// Initialize App
+document.addEventListener("DOMContentLoaded", MovieApp.init);
